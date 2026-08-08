@@ -75,6 +75,12 @@ const CONFIG = {
   // deixa em "" para não usar configuração remota
   remoteConfigUrl: "",
   remoteRefreshMs: 5 * 60 * 1000,
+
+  // ---- AUTO-UPDATE DO PRÓPRIO FICHEIRO (opcional) ----
+  // URL "raw" DESTE MESMO ficheiro no GitHub. Verifica de x em x tempo se
+  // mudou e, se sim, recarrega-se sozinho.
+  autoUpdateUrl: "https://raw.githubusercontent.com/godtigas/obs-overlay/main/taydodrill_chat_topright.html",
+  autoUpdateCheckMs: 20 * 1000,
 };
 
 let lastChatKey = null;
@@ -111,8 +117,41 @@ async function init(){
       if (changed) applyTwitchChat();
     }, CONFIG.remoteRefreshMs);
   }
+  initAutoUpdate();
 }
 init();
+
+// Auto-update: verifica se ESTE ficheiro mudou no GitHub e recarrega sozinho
+async function hashText(text){
+  const enc = new TextEncoder().encode(text);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+let lastFileHash = null;
+async function checkForFileUpdate(){
+  if (!CONFIG.autoUpdateUrl) return;
+  try {
+    const bust = CONFIG.autoUpdateUrl.includes('?') ? '&' : '?';
+    const res = await fetch(CONFIG.autoUpdateUrl + bust + 't=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    const hash = await hashText(text);
+    if (lastFileHash === null) {
+      lastFileHash = hash;
+      return;
+    }
+    if (hash !== lastFileHash) {
+      location.reload();
+    }
+  } catch (e) {
+    console.error('auto-update check error', e);
+  }
+}
+function initAutoUpdate(){
+  if (!CONFIG.autoUpdateUrl) return;
+  checkForFileUpdate();
+  setInterval(checkForFileUpdate, CONFIG.autoUpdateCheckMs);
+}
 </script>
 
 </body>
