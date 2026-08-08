@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<!--
+  ============================================================
+  TAYDODRILL — OBS OVERLAY
+  ============================================================
+  COMO USAR NO OBS:
+  1. Adiciona uma "Browser Source" (Fonte de Navegador).
+  2. Marca "Local file" e escolhe este ficheiro .html
+     (ou hospeda-o e usa o URL).
+  3. Largura: 1920  Altura: 1080  (mesmo tamanho do teu canvas).
+  4. Deixa "Shutdown source when not visible" DESLIGADO.
+  5. Coloca esta fonte por CIMA da tua captura do jogo/site —
+     o centro do overlay é transparente de propósito, para a
+     tua captura aparecer por baixo.
+
+  PARA EDITAR OS DADOS (nome, texto, timer, ticker, toggle, etc.):
+  Vai à secção "CONFIG" no <script> lá em baixo e muda os valores.
+
+  CHAT DA TWITCH:
+  O chat agora é um ficheiro À PARTE — taydodrill_chat.html — para poderes
+  mover e redimensionar livremente no OBS, independente desta barra do topo.
+  Adiciona-o como uma SEGUNDA Browser Source (ver instruções nesse ficheiro).
+
+  CONFIGURAÇÃO REMOTA (mudar definições à distância, sem reenviar o ficheiro):
+  1. Vai a https://gist.github.com/, cria um Gist novo (pode ser "secret").
+  2. Nome do ficheiro: config.json — conteúdo, por exemplo:
+     {
+       "logo": "TAYDODRILL",
+       "gambleText": "BE GAMBLE AWARE +18",
+       "toggleLeftLabel": "WAGER",
+       "toggleRightLabel": "RAW"
+     }
+  3. Guarda o Gist. Clica no botão "Raw" do ficheiro e copia o URL
+     (algo como: https://gist.githubusercontent.com/teu-user/ID/raw/config.json).
+  4. Cola esse URL em CONFIG.remoteConfigUrl, lá em baixo no <script>.
+  5. Sempre que editares e guardares esse Gist, todos os overlays que tenham
+     este URL configurado vão buscar os novos valores automaticamente
+     (a cada 5 minutos, ou ao abrir a fonte de novo). Não precisas de
+     reenviar o .html a ninguém outra vez.
+  ============================================================
+-->
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<title>TaydoDrill Overlay</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 1920px;
+    height: 1080px;
+    overflow: hidden;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    color: #fff;
+  }
+  * { box-sizing: border-box; }
+
+  /* fundo animado tipo aurora, agora a cobrir a página toda (deixa de ser transparente) */
+  html, body, #stage {
+    background: linear-gradient(120deg, #081a33, #123a63, #0d6e8f, #0a2c52, #081a33);
+    background-size: 300% 300%;
+    animation: aurora-move 14s ease-in-out infinite;
+  }
+
+  #stage {
+    position: relative;
+    width: 1920px;
+    height: 1080px;
+  }
+
+  /* ---------- TOP BAR (tema azul/ciano, fundo animado tipo aurora) ---------- */
+  #topbar {
+    position: absolute;
+    top: 14px;
+    left: 20px;
+    right: 20px;
+    height: 62px;
+    background: linear-gradient(120deg, #081a33, #123a63, #0d6e8f, #0a2c52, #081a33);
+    background-size: 300% 300%;
+    animation: aurora-move 14s ease-in-out infinite;
+    border: 1px solid #1f5c8f;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    box-shadow: 0 6px 18px rgba(0,0,0,.45), 0 0 24px rgba(45,140,220,.08);
+  }
+  @keyframes aurora-move {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  .logo {
+    font-weight: 900;
+    font-style: italic;
+    font-size: 22px;
+    letter-spacing: .5px;
+    color: #fff;
+    text-shadow: 0 0 12px rgba(80,190,255,.5);
+    margin-right: 22px;
+    white-space: nowrap;
+  }
+  .pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(80,180,255,.09);
+    border: 1px solid rgba(100,190,255,.18);
+    border-radius: 10px;
+    padding: 7px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    margin-right: 10px;
+    white-space: nowrap;
+    color: #cfeeff;
+  }
+  .pill.grow { flex: 1; justify-content: flex-start; }
+  .icon { width: 16px; height: 16px; flex-shrink: 0; }
+  .dot-red {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #ff4d4d; box-shadow: 0 0 8px #ff4d4d;
+  }
+  .gamble {
+    margin-left: auto;
+    font-size: 13px;
+    font-weight: 700;
+    color: #6fb3d9;
+    white-space: nowrap;
+    padding-left: 14px;
+  }
+  /* ---------- CRYPTO TICKER (loop infinito) ---------- */
+  #crypto-ticker {
+    position: relative;
+    flex: 1;
+    height: 100%;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 24px, #000 calc(100% - 24px), transparent 100%);
+    mask-image: linear-gradient(90deg, transparent 0, #000 24px, #000 calc(100% - 24px), transparent 100%);
+  }
+  #crypto-track {
+    position: absolute;
+    top: 0; left: 0; height: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: max-content;
+    animation: crypto-scroll linear infinite;
+    will-change: transform;
+  }
+  @keyframes crypto-scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+  .crypto-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(80,180,255,.09);
+    border: 1px solid rgba(100,190,255,.18);
+    border-radius: 10px;
+    padding: 7px 12px;
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .crypto-symbol { color: #fff; }
+  .crypto-price { color: #a9d9f2; font-weight: 600; }
+  .crypto-change { font-weight: 800; }
+  .crypto-change.up { color: #3ddc84; }
+  .crypto-change.down { color: #ff5d5d; }
+
+  /* ---------- TOGGLE SWITCH (manual, decorativo) ---------- */
+  #toggle-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(80,180,255,.09);
+    border: 1px solid rgba(100,190,255,.18);
+    border-radius: 10px;
+    padding: 7px 12px;
+    margin-right: 10px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: .3px;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+  }
+  #toggle-wrap .toggle-label { color: #4d84ab; transition: color .15s ease; }
+  #toggle-wrap.on .toggle-label.left { color: #fff; }
+  #toggle-wrap.off .toggle-label.right { color: #fff; }
+  .toggle-switch {
+    position: relative;
+    width: 40px;
+    height: 22px;
+    border-radius: 999px;
+    background: #34d17c;
+    transition: background .15s ease;
+    flex-shrink: 0;
+  }
+  #toggle-wrap.on .toggle-switch { background: #ff4d4d; }
+  .toggle-knob {
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,.4);
+    transition: transform .15s ease;
+  }
+  #toggle-wrap.on .toggle-knob { transform: translateX(18px); }
+
+</style>
+</head>
+<body>
+
+<div id="stage">
+
+  <!-- TOP BAR -->
+  <div id="topbar">
+    <div class="logo" id="cfg-logo">GODMOTA</div>
+
+    <div class="pill" id="cfg-date"></div>
+
+    <div class="pill">
+      <span id="cfg-clock"></span>
+    </div>
+
+    <div class="pill">
+      <span class="dot-red"></span>
+      <span id="cfg-sessiontimer">00:00:00</span>
+    </div>
+
+    <div id="crypto-ticker"><div id="crypto-track"></div></div>
+
+    <div id="toggle-wrap">
+      <span class="toggle-label left" id="cfg-toggle-left"></span>
+      <div class="toggle-switch"><div class="toggle-knob"></div></div>
+      <span class="toggle-label right" id="cfg-toggle-right"></span>
+    </div>
+
+    <div class="gamble" id="cfg-gamble">BE GAMBLE AWARE +18</div>
+  </div>
+
+</div>
+
+<script>
+/* ============================================================
+   CONFIG — edita aqui os teus dados
+   ============================================================ */
+const CONFIG = {
+  logo: "TAYDODRILL",
+  gambleText: "BE GAMBLE AWARE +18",
+
+  // timer de sessão (conta a subir desde que a página carrega)
+  sessionAutoStart: true,
+
+  // top moedas mostradas no ticker (par contra USDT na Binance).
+  // Edita esta lista se quiseres trocar/adicionar moedas.
+  cryptoSymbols: ["BTC","ETH","BNB","SOL","XRP","DOGE","ADA","TRX","AVAX","TON"],
+  cryptoRefreshMs: 30000, // atualizar preços a cada 30s
+  cryptoLoopSeconds: 28,  // duração de uma volta completa do loop (menor = mais rápido)
+
+  // botão de toggle manual no topo (só decorativo — clicas e muda de estado)
+  toggleLeftLabel: "WAGER",
+  toggleRightLabel: "RAW",
+  toggleDefaultOn: false, // true = começa no lado direito (RAW) ligado
+
+  // ---- CONFIGURAÇÃO REMOTA (opcional) ----
+  // Se preencheres isto com o URL "raw" de um ficheiro JSON (ex: um Gist do
+  // GitHub), o overlay vai buscar esse JSON ao abrir E de X em X minutos, e
+  // qualquer campo que estiver lá dentro substitui os valores acima.
+  // Assim consegues mudar as configurações de qualquer overlay que já esteja
+  // a correr num PC de um amigo, só editando esse ficheiro online — não
+  // precisas de reenviar o .html outra vez.
+  // Deixa em "" para não usar esta funcionalidade.
+  remoteConfigUrl: "",
+  remoteRefreshMs: 5 * 60 * 1000, // de quanto em quanto tempo verifica o remoto (5 min)
+
+  // ---- AUTO-UPDATE DO PRÓPRIO FICHEIRO (opcional) ----
+  // Se preencheres isto com o URL "raw" DESTE MESMO ficheiro no GitHub,
+  // o overlay vai verificar de x em x tempo se o conteúdo mudou (ex: editaste
+  // e fizeste push de uma alteração). Se mudou, recarrega-se sozinho e mostra
+  // a versão nova — sem ninguém ter de tocar no OBS. Só recarrega quando
+  // há mesmo uma alteração (para não reiniciar o timer de sessão à toa).
+  // Só funciona quando esta fonte está a ser carregada a partir desse URL
+  // (Browser Source → URL, não "Local file").
+  // Deixa em "" para desligar esta funcionalidade.
+  autoUpdateUrl: "",
+  autoUpdateCheckMs: 20 * 1000, // de quanto em quanto tempo verifica (20s)
+};
+/* ============================================================ */
+
+function applyTextFields(){
+  document.getElementById('cfg-logo').textContent = CONFIG.logo;
+  document.getElementById('cfg-gamble').textContent = CONFIG.gambleText;
+  document.getElementById('cfg-toggle-left').textContent = CONFIG.toggleLeftLabel;
+  document.getElementById('cfg-toggle-right').textContent = CONFIG.toggleRightLabel;
+}
+
+let toggleInitialized = false;
+function initToggle(){
+  const wrap = document.getElementById('toggle-wrap');
+  function applyState(on){
+    wrap.classList.toggle('on', on);
+    wrap.classList.toggle('off', !on);
+  }
+  if (!toggleInitialized) {
+    applyState(!!CONFIG.toggleDefaultOn);
+    wrap.addEventListener('click', () => applyState(!wrap.classList.contains('on')));
+    toggleInitialized = true;
+  }
+}
+
+let cryptoTickerStarted = false;
+function initCryptoTicker(){
+  if (cryptoTickerStarted) return; // esta parte só arranca uma vez (usa os valores do primeiro load)
+  cryptoTickerStarted = true;
+  const track = document.getElementById('crypto-track');
+  track.style.animationDuration = CONFIG.cryptoLoopSeconds + 's';
+
+  const pairs = CONFIG.cryptoSymbols.map(s => s + "USDT");
+  const url = "https://api.binance.com/api/v3/ticker/24hr?symbols=" +
+              encodeURIComponent(JSON.stringify(pairs));
+
+  function fmtPrice(v){
+    if (v >= 1000) return v.toLocaleString('en-US', {maximumFractionDigits:0});
+    if (v >= 1) return v.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+    return v.toLocaleString('en-US', {minimumFractionDigits:4, maximumFractionDigits:6});
+  }
+
+  function pillHTML(item){
+    const symbol = item.symbol.replace(/USDT$/, '');
+    const price = parseFloat(item.lastPrice);
+    const change = parseFloat(item.priceChangePercent) || 0;
+    const cls = change >= 0 ? 'up' : 'down';
+    const arrow = change >= 0 ? '▲' : '▼';
+    return '<div class="crypto-pill">' +
+      '<span class="crypto-symbol">' + symbol + '</span>' +
+      '<span class="crypto-price">$' + fmtPrice(price) + '</span>' +
+      '<span class="crypto-change ' + cls + '">' + arrow + ' ' + Math.abs(change).toFixed(2) + '%</span>' +
+      '</div>';
+  }
+
+  let loaded = false;
+  async function refresh(){
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const items = await res.json();
+      if (!Array.isArray(items) || items.length === 0) throw new Error('resposta vazia');
+      const order = CONFIG.cryptoSymbols;
+      items.sort((a,b) => order.indexOf(a.symbol.replace(/USDT$/,'')) - order.indexOf(b.symbol.replace(/USDT$/,'')));
+      const setHTML = items.map(pillHTML).join('');
+      track.innerHTML = setHTML + setHTML;
+      loaded = true;
+    } catch (e) {
+      console.error('crypto ticker error', e);
+      if (!loaded) {
+        track.innerHTML = '<div class="crypto-pill"><span class="crypto-price">a carregar cotações…</span></div>';
+        setTimeout(refresh, 8000);
+      }
+    }
+  }
+  refresh();
+  setInterval(refresh, CONFIG.cryptoRefreshMs);
+}
+
+// Busca as configurações remotas (se houver URL definido) e junta-as ao CONFIG local
+async function loadRemoteConfig(){
+  if (!CONFIG.remoteConfigUrl) return false;
+  try {
+    const bust = CONFIG.remoteConfigUrl.includes('?') ? '&' : '?';
+    const res = await fetch(CONFIG.remoteConfigUrl + bust + 't=' + Date.now());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const remote = await res.json();
+    Object.assign(CONFIG, remote);
+    return true;
+  } catch (e) {
+    console.error('remote config error', e);
+    return false;
+  }
+}
+
+async function init(){
+  await loadRemoteConfig();       // 1ª leitura, antes de desenhar tudo
+  applyTextFields();
+  initToggle();
+  initCryptoTicker();
+
+  // Verifica o remoto periodicamente e atualiza ao vivo os campos "leves"
+  // (nome, texto, labels do toggle). O ticker de crypto só é reconfigurado
+  // num refresh completo da fonte no OBS.
+  if (CONFIG.remoteConfigUrl) {
+    setInterval(async () => {
+      const changed = await loadRemoteConfig();
+      if (changed) applyTextFields();
+    }, CONFIG.remoteRefreshMs);
+  }
+
+  initAutoUpdate();
+}
+init();
+
+// Auto-update: verifica se ESTE ficheiro mudou no GitHub e recarrega sozinho
+async function hashText(text){
+  const enc = new TextEncoder().encode(text);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+let lastFileHash = null;
+async function checkForFileUpdate(){
+  if (!CONFIG.autoUpdateUrl) return;
+  try {
+    const bust = CONFIG.autoUpdateUrl.includes('?') ? '&' : '?';
+    const res = await fetch(CONFIG.autoUpdateUrl + bust + 't=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    const hash = await hashText(text);
+    if (lastFileHash === null) {
+      lastFileHash = hash; // primeira leitura, só guarda a "assinatura" atual
+      return;
+    }
+    if (hash !== lastFileHash) {
+      location.reload(); // detetou alteração real -> recarrega para mostrar a versão nova
+    }
+  } catch (e) {
+    console.error('auto-update check error', e);
+  }
+}
+function initAutoUpdate(){
+  if (!CONFIG.autoUpdateUrl) return;
+  checkForFileUpdate();
+  setInterval(checkForFileUpdate, CONFIG.autoUpdateCheckMs);
+}
+
+// Live date + clock
+function pad(n){ return n.toString().padStart(2,'0'); }
+const MONTHS = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+const DAYS = ["SUN","MON","TUE","WED","THU","FRI","SAT"];
+function updateClock(){
+  const now = new Date();
+  document.getElementById('cfg-date').textContent =
+    DAYS[now.getDay()] + " " + MONTHS[now.getMonth()] + " " + now.getDate();
+  document.getElementById('cfg-clock').textContent =
+    pad(now.getHours()) + ":" + pad(now.getMinutes());
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// Session timer (conta a subir)
+let sessionSeconds = 0;
+function tickSession(){
+  sessionSeconds++;
+  const h = Math.floor(sessionSeconds/3600);
+  const m = Math.floor((sessionSeconds%3600)/60);
+  const s = sessionSeconds%60;
+  document.getElementById('cfg-sessiontimer').textContent = pad(h)+":"+pad(m)+":"+pad(s);
+}
+if (CONFIG.sessionAutoStart) setInterval(tickSession, 1000);
+</script>
+
+</body>
+</html>
