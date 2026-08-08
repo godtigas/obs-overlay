@@ -351,7 +351,7 @@ function initCryptoTicker(){
       const items = await res.json();
       if (!Array.isArray(items) || items.length === 0) throw new Error('resposta vazia');
       const order = CONFIG.cryptoSymbols;
-      items.sort((a,b) => order.indexOf(a.symbol.replace(/USDT$/,'')) - order.indexOf(b.symbol.replace(/USDT$/'')));
+      items.sort((a,b) => order.indexOf(a.symbol.replace(/USDT$/,'')) - order.indexOf(b.symbol.replace(/USDT$/,'')));
       const setHTML = items.map(pillHTML).join('');
       track.innerHTML = setHTML + setHTML;
       loaded = true;
