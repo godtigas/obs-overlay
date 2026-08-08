@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<!--
+  ============================================================
+  OSCOLDERST — ECRÃ "STARTING SOON"
+  ============================================================
+  Overlay à parte, canvas fixo 1920x1080, com o mesmo tema de
+  cores azul/ciano (fundo aurora animado) do overlay principal.
+
+  COMO USAR NO OBS:
+  1. Cria uma Scene nova (ex: "Starting Soon").
+  2. Adiciona uma Browser Source → Local file → escolhe este ficheiro.
+  3. Largura: 1920  Altura: 1080.
+  4. Muda para esta Scene antes de começares a jogar/mostrar o site.
+
+  PARA EDITAR (texto, logo, contagem decrescente, moedas, etc.):
+  Vai à secção CONFIG no <script> lá em baixo.
+
+  CONTAGEM DECRESCENTE:
+  Um timer simples conta a descer de CONFIG.countdownMinutes (por
+  omissão 15) até 0, a partir do momento em que a página carrega.
+  ============================================================
+-->
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<title>oscolderst — Starting Soon</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 1920px;
+    height: 1080px;
+    overflow: hidden;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    color: #fff;
+  }
+  * { box-sizing: border-box; }
+
+  /* fundo animado tipo aurora, mesmas cores do overlay principal */
+  #stage {
+    position: relative;
+    width: 1920px;
+    height: 1080px;
+    background: linear-gradient(120deg, #081a33, #123a63, #0d6e8f, #0a2c52, #081a33);
+    background-size: 300% 300%;
+    animation: aurora-move 14s ease-in-out infinite;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  @keyframes aurora-move {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* ---------- BARRA DO TOPO (relógio + ticker de crypto) ---------- */
+  #topbar {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    right: 20px;
+    height: 56px;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(80,180,255,.09);
+    border: 1px solid rgba(100,190,255,.18);
+    border-radius: 10px;
+    padding: 7px 14px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #cfeeff;
+    white-space: nowrap;
+  }
+  #crypto-ticker {
+    position: relative;
+    flex: 1;
+    height: 100%;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 24px, #000 calc(100% - 24px), transparent 100%);
+    mask-image: linear-gradient(90deg, transparent 0, #000 24px, #000 calc(100% - 24px), transparent 100%);
+  }
+  #crypto-track {
+    position: absolute;
+    top: 0; left: 0; height: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: max-content;
+    animation: crypto-scroll linear infinite;
+    will-change: transform;
+  }
+  @keyframes crypto-scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+  .crypto-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(80,180,255,.09);
+    border: 1px solid rgba(100,190,255,.18);
+    border-radius: 10px;
+    padding: 7px 12px;
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .crypto-symbol { color: #fff; }
+  .crypto-price { color: #a9d9f2; font-weight: 600; }
+  .crypto-change { font-weight: 800; }
+  .crypto-change.up { color: #3ddc84; }
+  .crypto-change.down { color: #ff5d5d; }
+
+  /* ---------- MOEDAS A CAIR ---------- */
+  #coins {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .coin {
+    position: absolute;
+    top: -80px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #fff6cf 0%, #ffd75e 35%, #d99a1f 75%, #a86e12 100%);
+    box-shadow: 0 0 10px rgba(255, 215, 94, .55), inset 0 0 6px rgba(255,255,255,.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    color: #8a5a10;
+    text-shadow: 0 1px 0 rgba(255,255,255,.4);
+    animation: coin-fall linear infinite;
+  }
+  @keyframes coin-fall {
+    from { transform: translateY(0) rotate(0deg); }
+    to   { transform: translateY(1220px) rotate(360deg); }
+  }
+
+  #content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+  }
+
+  .logo {
+    font-weight: 900;
+    font-style: italic;
+    font-size: 48px;
+    letter-spacing: 1px;
+    color: #fff;
+    text-shadow: 0 0 20px rgba(80,190,255,.6);
+    margin-bottom: 18px;
+  }
+
+  .main-text {
+    font-size: 96px;
+    font-weight: 900;
+    letter-spacing: 4px;
+    color: #cfeeff;
+    text-shadow: 0 0 30px rgba(100,200,255,.55);
+    animation: pulse-glow 2.4s ease-in-out infinite;
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% { opacity: 1; text-shadow: 0 0 30px rgba(100,200,255,.55); }
+    50%      { opacity: .72; text-shadow: 0 0 55px rgba(100,200,255,.9); }
+  }
+
+  .sub-text {
+    margin-top: 20px;
+    font-size: 22px;
+    font-weight: 600;
+    color: #6fb3d9;
+    letter-spacing: .5px;
+  }
+
+  #countdown {
+    margin-top: 34px;
+    font-size: 56px;
+    font-weight: 800;
+    color: #a9d9f2;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 2px;
+  }
+
+  .gamble {
+    position: absolute;
+    bottom: 26px;
+    left: 0;
+    right: 0;
+    z-index: 2;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: #4d84ab;
+    letter-spacing: .5px;
+  }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div id="coins"></div>
+
+  <div id="topbar">
+    <div class="pill" id="cfg-clock">00:00</div>
+    <div id="crypto-ticker"><div id="crypto-track"></div></div>
+  </div>
+
+  <div id="content">
+    <div class="logo" id="cfg-logo">TAYDODRILL</div>
+    <div class="main-text" id="cfg-maintext">STARTING SOON</div>
+    <div class="sub-text" id="cfg-subtext"></div>
+    <div id="countdown">15:00</div>
+  </div>
+  <div class="gamble" id="cfg-gamble">BE GAMBLE AWARE +18</div>
+</div>
+
+<script>
+const CONFIG = {
+  logo: "OSCOLDERST",
+  mainText: "STARTING SOON",
+  subText: "a stream começa em breve, fica por aqui",
+  gambleText: "BE GAMBLE AWARE +18",
+
+  // contagem decrescente simples: começa em X minutos e desce até 0
+  countdownMinutes: 15,
+
+  // moedas mostradas no ticker (mesmo esquema do overlay principal, via Binance)
+  cryptoSymbols: ["BTC","ETH","BNB","SOL","XRP","DOGE","ADA","TRX","AVAX","TON"],
+  cryptoRefreshMs: 30000,
+  cryptoLoopSeconds: 28,
+
+  // efeito de moedas a cair no fundo
+  coinsEnabled: true,
+  coinsCount: 26,        // quantas moedas ao mesmo tempo no ecrã
+  coinsMinDuration: 5,   // segundos, moeda mais rápida
+  coinsMaxDuration: 11,  // segundos, moeda mais lenta
+  coinsMinSize: 22,      // px
+  coinsMaxSize: 42,       // px
+};
+
+function pad(n){ return n.toString().padStart(2,'0'); }
+
+document.getElementById('cfg-logo').textContent = CONFIG.logo;
+document.getElementById('cfg-maintext').textContent = CONFIG.mainText;
+document.getElementById('cfg-subtext').textContent = CONFIG.subText;
+document.getElementById('cfg-gamble').textContent = CONFIG.gambleText;
+
+// Efeito de moedas a cair
+(function(){
+  if (!CONFIG.coinsEnabled) return;
+  const wrap = document.getElementById('coins');
+  function rand(min, max){ return Math.random() * (max - min) + min; }
+  for (let i = 0; i < CONFIG.coinsCount; i++) {
+    const coin = document.createElement('div');
+    coin.className = 'coin';
+    coin.textContent = '$';
+    const size = rand(CONFIG.coinsMinSize, CONFIG.coinsMaxSize);
+    const duration = rand(CONFIG.coinsMinDuration, CONFIG.coinsMaxDuration);
+    coin.style.left = rand(0, 100) + '%';
+    coin.style.width = size + 'px';
+    coin.style.height = size + 'px';
+    coin.style.fontSize = (size * 0.5) + 'px';
+    coin.style.animationDuration = duration + 's';
+    coin.style.animationDelay = '-' + rand(0, duration) + 's'; // já em queda ao carregar
+    wrap.appendChild(coin);
+  }
+})();
+
+// Relógio ao vivo (24h)
+function updateClock(){
+  const now = new Date();
+  document.getElementById('cfg-clock').textContent = pad(now.getHours()) + ":" + pad(now.getMinutes());
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// Contagem decrescente: countdownMinutes → 0, a partir do load da página
+(function(){
+  let secondsLeft = CONFIG.countdownMinutes * 60;
+  const el = document.getElementById('countdown');
+  function tick(){
+    const m = Math.floor(secondsLeft / 60);
+    const s = secondsLeft % 60;
+    el.textContent = pad(m) + ":" + pad(s);
+    if (secondsLeft > 0) secondsLeft--;
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
+
+// Ticker de crypto (Binance, sem API key) — igual ao do overlay principal
+(function(){
+  const track = document.getElementById('crypto-track');
+  track.style.animationDuration = CONFIG.cryptoLoopSeconds + 's';
+
+  const pairs = CONFIG.cryptoSymbols.map(s => s + "USDT");
+  const url = "https://api.binance.com/api/v3/ticker/24hr?symbols=" +
+              encodeURIComponent(JSON.stringify(pairs));
+
+  function fmtPrice(v){
+    if (v >= 1000) return v.toLocaleString('en-US', {maximumFractionDigits:0});
+    if (v >= 1) return v.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+    return v.toLocaleString('en-US', {minimumFractionDigits:4, maximumFractionDigits:6});
+  }
+
+  function pillHTML(item){
+    const symbol = item.symbol.replace(/USDT$/, '');
+    const price = parseFloat(item.lastPrice);
+    const change = parseFloat(item.priceChangePercent) || 0;
+    const cls = change >= 0 ? 'up' : 'down';
+    const arrow = change >= 0 ? '▲' : '▼';
+    return '<div class="crypto-pill">' +
+      '<span class="crypto-symbol">' + symbol + '</span>' +
+      '<span class="crypto-price">$' + fmtPrice(price) + '</span>' +
+      '<span class="crypto-change ' + cls + '">' + arrow + ' ' + Math.abs(change).toFixed(2) + '%</span>' +
+      '</div>';
+  }
+
+  let loaded = false;
+  async function refresh(){
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const items = await res.json();
+      if (!Array.isArray(items) || items.length === 0) throw new Error('resposta vazia');
+      const order = CONFIG.cryptoSymbols;
+      items.sort((a,b) => order.indexOf(a.symbol.replace(/USDT$/,'')) - order.indexOf(b.symbol.replace(/USDT$/,'')));
+      const setHTML = items.map(pillHTML).join('');
+      track.innerHTML = setHTML + setHTML;
+      loaded = true;
+    } catch (e) {
+      console.error('crypto ticker error', e);
+      if (!loaded) {
+        track.innerHTML = '<div class="crypto-pill"><span class="crypto-price">a carregar cotações…</span></div>';
+        setTimeout(refresh, 8000);
+      }
+    }
+  }
+  refresh();
+  setInterval(refresh, CONFIG.cryptoRefreshMs);
+})();
+</script>
+
+</body>
+</html>
