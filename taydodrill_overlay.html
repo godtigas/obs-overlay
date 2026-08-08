@@ -219,7 +219,7 @@
 
   <!-- TOP BAR -->
   <div id="topbar">
-    <div class="logo" id="cfg-logo">GODMOTA</div>
+    <div class="logo" id="cfg-logo">OSCOLDERST</div>
 
     <div class="pill" id="cfg-date"></div>
 
@@ -351,14 +351,14 @@ function initCryptoTicker(){
       const items = await res.json();
       if (!Array.isArray(items) || items.length === 0) throw new Error('resposta vazia');
       const order = CONFIG.cryptoSymbols;
-      items.sort((a,b) => order.indexOf(a.symbol.replace(/USDT$/,'')) - order.indexOf(b.symbol.replace(/USDT$/'));
+      items.sort((a,b) => order.indexOf(a.symbol.replace(/USDT$/,'')) - order.indexOf(b.symbol.replace(/USDT$/'')));
       const setHTML = items.map(pillHTML).join('');
       track.innerHTML = setHTML + setHTML;
       loaded = true;
     } catch (e) {
       console.error('crypto ticker error', e);
       if (!loaded) {
-        track.innerHTML = '<div class="crypto-pill"><span class="crypto-price">a carregar cotações…</span></div>';
+        track.innerHTML = '<div class="crypto-pill"><span class="crypto-price">a carregar cotações …</span></div>';
         setTimeout(refresh, 8000);
       }
     }
