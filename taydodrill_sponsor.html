@@ -10,14 +10,13 @@
   1. Adiciona uma "Browser Source" (Fonte de Navegador).
   2. Marca "Local file" e escolhe este ficheiro .html
      (ou hospeda-o e usa o URL, tal como os outros).
-  3. Largura: 1920  Altura: 1080  (mesmo canvas dos outros ficheiros,
-     para o cartão ficar alinhado com a overlay principal).
+  3. Largura: 230   Altura: 536   (a resolução é só do tamanho do
+     cartão — nada de 1920x1080 aqui. Fica com este tamanho exato
+     e depois arrastas para onde quiseres no OBS).
   4. Deixa "Shutdown source when not visible" DESLIGADO.
-  5. O cartão já vem posicionado por baixo da barra do topo,
-     encostado ao lado esquerdo do chat — sem tapar a câmara
-     nem a captura de ecrã. Se quiseres mudar de sítio ou
-     tamanho, arrasta/redimensiona a fonte no OBS como qualquer
-     outra.
+  5. Se quiseres o cartão maior/mais pequeno, redimensiona a fonte
+     no OBS como qualquer outra (mantém a proporção 230:536 para
+     não distorcer).
 
   Este ficheiro precisa de duas imagens ao lado dele no mesmo
   sítio (mesma pasta/repositório):
@@ -34,23 +33,12 @@
   html, body {
     margin: 0;
     padding: 0;
-    width: 1920px;
-    height: 1080px;
     background: transparent;
-    overflow: hidden;
     font-family: Arial, Helvetica, sans-serif;
-  }
-  #stage {
-    position: relative;
-    width: 1920px;
-    height: 1080px;
   }
 
   /* ---------- SPONSOR (bettilt) ---------- */
   #sponsor-card {
-    position: absolute;
-    top: 96px;
-    right: 466px;
     width: 230px;
     background: linear-gradient(160deg, rgba(10,32,60,.92), rgba(8,26,51,.92));
     border: 1px solid rgba(100,190,255,.28);
@@ -86,16 +74,14 @@
 </style>
 </head>
 <body>
-  <div id="stage">
-    <!-- SPONSOR -->
-    <div id="sponsor-card">
-      <div id="sponsor-label">Patrocinado por</div>
-      <div id="sponsor-logo-wrap">
-        <img src="bettilt_logo_small.png" alt="Bettilt">
-      </div>
-      <div id="sponsor-promo">
-        <img src="bettilt_promo_small.jpg" alt="Bettilt - Thor vs Loki - 50 FS - codigo BARROTEFS">
-      </div>
+  <!-- SPONSOR -->
+  <div id="sponsor-card">
+    <div id="sponsor-label">Patrocinado por</div>
+    <div id="sponsor-logo-wrap">
+      <img src="bettilt_logo_small.png" alt="Bettilt">
+    </div>
+    <div id="sponsor-promo">
+      <img src="bettilt_promo_small.jpg" alt="Bettilt - Thor vs Loki - 50 FS - codigo BARROTEFS">
     </div>
   </div>
 </body>
