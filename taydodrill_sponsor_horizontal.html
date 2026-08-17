@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<!--
+  ============================================================
+  TAYDODRILL — SPONSOR HORIZONTAL (bloco à parte, Bettilt)
+  ============================================================
+  Variante horizontal do bloco sponsor — logo e imagem
+  promocional lado a lado, mais pequenas e mais compactas.
+  É a sua própria Browser Source no OBS, tal como os outros.
+
+  COMO USAR NO OBS:
+  1. Adiciona uma "Browser Source" (Fonte de Navegador).
+  2. Marca "Local file" e escolhe este ficheiro .html
+     (ou hospeda-o e usa o URL, tal como os outros).
+  3. A resolução é só do tamanho do cartão (não é 1920x1080).
+     Usa o tamanho exato indicado depois de publicares — ou
+     deixa em qualquer tamanho e ajusta a Browser Source no OBS.
+  4. Deixa "Shutdown source when not visible" DESLIGADO.
+  5. Se quiseres maior/mais pequeno, redimensiona a fonte no OBS
+     como qualquer outra.
+
+  Este ficheiro precisa de duas imagens ao lado dele no mesmo
+  sítio (mesma pasta/repositório):
+    - bettilt_logo_small.png
+    - bettilt_promo_small.jpg
+  ============================================================
+-->
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<title>TaydoDrill Sponsor (Horizontal)</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    font-family: Arial, Helvetica, sans-serif;
+  }
+
+  /* ---------- SPONSOR (bettilt, horizontal) ---------- */
+  #sponsor-card {
+    display: inline-flex;
+    flex-direction: column;
+    width: fit-content;
+    background: linear-gradient(160deg, rgba(10,32,60,.92), rgba(8,26,51,.92));
+    border: 1px solid rgba(100,190,255,.28);
+    border-radius: 14px;
+    padding: 14px;
+    box-shadow: 0 6px 18px rgba(0,0,0,.45), 0 0 24px rgba(45,140,220,.12);
+  }
+  #sponsor-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    color: #6fb3d9;
+    text-transform: uppercase;
+    margin: 0 0 8px 2px;
+  }
+  #sponsor-images-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  #sponsor-logo-wrap {
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 8px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #sponsor-logo-wrap img { height: 100%; width: auto; display: block; }
+  #sponsor-promo {
+    height: 100px;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 10px rgba(0,0,0,.35);
+  }
+  #sponsor-promo img { height: 100%; width: auto; display: block; }
+</style>
+</head>
+<body>
+  <!-- SPONSOR HORIZONTAL -->
+  <div id="sponsor-card">
+    <div id="sponsor-label">Patrocinado por</div>
+    <div id="sponsor-images-row">
+      <div id="sponsor-logo-wrap">
+        <img src="bettilt_logo_small.png" alt="Bettilt">
+      </div>
+      <div id="sponsor-promo">
+        <img src="bettilt_promo_small.jpg" alt="Bettilt - Thor vs Loki - 50 FS - codigo BARROTEFS">
+      </div>
+    </div>
+  </div>
+</body>
+</html>
